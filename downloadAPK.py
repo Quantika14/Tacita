@@ -13,15 +13,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-from urllib import urlretrieve, urlcleanup
+from urllib.request import urlretrieve,urlcleanup
 from apk_parse.apk import APK
-from requests import get
+import cfscrape
 import time, os
+import magic
 
 count_apk = 0
 count_html = 0
 start = 100000
-end = 110000
+end = 100005
 
 def new_dir():
 	ruta = r'bot' 
@@ -29,55 +30,60 @@ def new_dir():
 	return True
 
 def banner():
-	print "---------|||     |||--------"
-	print "---------|||     |||--------"
-	print "---------|||     ||||||||---"
-	print "---------|||     |||---||---"
-	print "---------|||     |||---||---"
-	print "---------|||     ||||||||---"
-	print "---------|||||||||||--------"
-	print "****************************"
-	print "little-cup.py | QuantiKa14"
-	print "Author: Jorge Websec"
-	print "Bot: DownloadAPK.py"
-  print "****************************"
-
-def download(url, file_name):
+	print("---------|||     |||--------")
+	print("---------|||     |||--------")
+	print("---------|||     ||||||||---")
+	print("---------|||     |||---||---")
+	print("---------|||     |||---||---")
+	print("---------|||     ||||||||---")
+	print("---------|||||||||||--------")
+	print("****************************")
+	print("little-cup.py | QuantiKa14")
+	print("Author: Jorge Websec")
+	print("Bot: DownloadAPK.py")
+	print("****************************")
+	
+	
+def download(url, file_name, scraper):
 	with open(file_name, "wb") as file:
 		try:
-			response = get(url, allow_redirects=True)
+			response = scraper.get(url, allow_redirects=True)
 			file.write(response.content)
-		except:
-			pass
+		except HTTPError as http_err:
+			print(f'HTTP error occurred: {http_err}')
+		except Exception as ex:
+			print(ex)
 
 def main():
 	global count_apk, count_html, start, end
 
 	banner()
 	if new_dir:
-		print "[INFO] check dir 'bot'..."
+		print ("[INFO] check dir 'bot'...")
 		os.chdir('bot')
 
-	time = (end - start)/60
-	print "[INFO] Estimated time: " + str(time) + "min"
+	enlapsed_time = (end - start)/60
+	print ("[INFO] Estimated time: " + str(enlapsed_time) + "min")
+	
+	scraper = cfscrape.create_scraper()
 
 	for i in range(start, end):
 		try:
-			url = ("http://www.apkmirror.com/wp-content/themes/APKMirror/download.php?id=" + str(i))
+			url = ("https://www.apkmirror.com/wp-content/themes/APKMirror/download.php?id=" + str(i))
 			filename = str(i)
-			download(url, filename)
+			download(url, filename, scraper)
 			time.sleep(1)
-		except:
-			continue
+		except Exception as ex:
+			print(ex)
 	for i in range(start, end):
-		f = open(str(i), 'r')
-		if f.readline().find('html')>0:
+		file_type = magic.from_file(str(i))
+		print(file_type)
+		if file_type.find('Java archive') >= 0:
 			count_html +=1
 		else:
 			count_apk += 1
-		f.close()
-	print "[INFO] " + str(count_html) + " html downloaded..."
-	print "[INFO] " + str(count_apk) + " apks downloaded..."
+	print("[INFO] " + str(count_html) + " html downloaded...")
+	print ("[INFO] " + str(count_apk) + " apks downloaded...")
 
 if __name__ == "__main__":
 	main()
