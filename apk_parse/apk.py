@@ -22,7 +22,7 @@ from . import androconf
 from .dvm_permissions import DVM_PERMISSIONS
 from .util import read, get_md5
 
-from io import StringIO
+from io import BytesIO
 from struct import pack, unpack
 from xml.sax.saxutils import escape
 from zlib import crc32
@@ -190,7 +190,7 @@ class APK(object):
         if zipmodule == 0:
             self.zip = ChilkatZip(self.__raw)
         else:
-            self.zip = zipfile.ZipFile(StringIO(self.__raw), mode=mode)
+            self.zip = zipfile.ZipFile(BytesIO(self.__raw), mode=mode)
 
         for i in self.zip.namelist():
             if i == "AndroidManifest.xml":
@@ -720,7 +720,7 @@ class APK(object):
         parse_icon_rt = os.popen(aapt_line).read()
         icon_paths = [icon.replace("'", '') for icon in parse_icon_rt.split('\n') if icon]
 
-        zfile = zipfile.ZipFile(StringIO(self.__raw), mode='r')
+        zfile = zipfile.ZipFile(BytesIO(self.__raw), mode='r')
         for icon in icon_paths:
             icon_name = icon.replace('/', '_')
             data = zfile.read(icon)
@@ -827,7 +827,7 @@ class StringBlock(object):
 
         for i in range(0, length):
             t_data = pack("=b", self.m_strings[offset + i])
-            data += unicode(t_data, errors='ignore')
+            data += str(t_data, 'utf-8')
             if data[-2:] == "\x00\x00":
                 break
 
@@ -835,7 +835,7 @@ class StringBlock(object):
         if end_zero != -1:
             data = data[:end_zero]
 
-        return data.decode("utf-16", 'replace')
+        return data.encode().decode("utf-16", 'replace')
 
     def decode2(self, array, offset, length):
         data = ""
@@ -966,7 +966,7 @@ class AXMLParser(object):
                 if chunkSize < 8 or chunkSize % 4 != 0:
                     androconf.warning("Invalid chunk size")
 
-                for i in range(0, chunkSize / 4 - 2):
+                for i in range(0, chunkSize // 4 - 2):
                     self.m_resourceIDs.append(unpack('<L', self.buff.read(4))[0])
 
                 continue
@@ -1194,7 +1194,7 @@ class AXMLPrinter(object):
                 self.buff += u'<' + self.getPrefix(self.axml.getPrefix()) + self.axml.getName() + u'\n'
                 self.buff += self.axml.getXMLNS()
 
-                for i in range(0, self.axml.getAttributeCount()):
+                for i in range(0, int(self.axml.getAttributeCount())):
                     self.buff += "%s%s=\"%s\"\n" % (self.getPrefix(
                         self.axml.getAttributePrefix(i)), self.axml.getAttributeName(i),
                                                     self._escape(self.getAttributeValue(i)))

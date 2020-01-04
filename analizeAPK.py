@@ -17,6 +17,7 @@ from apk_parse.apk import APK
 from pymongo import MongoClient
 import os, re, time
 from os import listdir
+import magic
 
 #import modules.idiomas_detector as ID
 
@@ -36,39 +37,38 @@ start = 100000
 end = 110000
 
 def banner():
-	print "---------|||     |||--------"
-	print "---------|||     |||--------"
-	print "---------|||     ||||||||---"
-	print "---------|||     |||---||---"
-	print "---------|||     |||---||---"
-	print "---------|||     ||||||||---"
-	print "---------|||||||||||--------"
-	print "****************************"
-	print "little-cup.py | QuantiKa14"
-	print "Author: Jorge Websec"
-	print "Name app: Tacita-APKanalyze.py"
-  	print "****************************"
-	print "- The last version 12/12/2019"
+	print("---------|||     |||--------")
+	print("---------|||     |||--------")
+	print("---------|||     ||||||||---")
+	print("---------|||     |||---||---")
+	print("---------|||     |||---||---")
+	print("---------|||     ||||||||---")
+	print("---------|||||||||||--------")
+	print("****************************")
+	print("little-cup.py | QuantiKa14")
+	print("Author: Jorge Websec")
+	print("Name app: Tacita-APKanalyze.py")
+	print("****************************")
+	print("- The last version 12/12/2019")
 
 def insert_mongodb(id_file, package, md5, file_size, andro_version, main_activity, activities, services, permissions, urls, emails, ftps, IPs, strings):
 	global client, db
 
 	try:
-		cursor = db.Tacita.find({"id_file":id_file})
-		if cursor:
-			
+		count = db.Tacita.count_documents({"id_file":id_file})
+		if count > 0:
 			date_Insert = time.strftime("%c")
 			date_Update = "none"
-			cursor = db.Tacita.update({"id_file":id_file},{"id_file": id_file, "package": package, "file_md5": md5, "file_size": file_size, "AndroidVersion": andro_version,"main_activity": main_activity, "activities": activities, "services": services, "permissions": permissions, "links": urls, "emails": emails, "ftps": ftps, "ips": IPs, "strings": strings, "date_Insert": date_Insert, "date_Update": date_Update, "bot":"DownloadAPK"})
-			print colores.blue + "[INFO][>] UPDATE IN DB" + colores.normal
+			cursor = db.Tacita.update_one({"id_file": id_file}, {'$set': {"package": package, "file_md5": md5, "file_size": file_size, "AndroidVersion": andro_version,"main_activity": main_activity, "activities": activities, "services": services, "permissions": permissions, "links": urls, "emails": emails, "ftps": ftps, "ips": IPs, "strings": strings, "date_Insert": date_Insert, "date_Update": date_Update, "bot":"DownloadAPK"}})
+			print(colores.blue + "[INFO][>] UPDATE IN DB" + colores.normal)
 		else:
 			date_Insert = time.strftime("%c")
 			date_Update = "none"
-			cursor = db.Tacita.insert({"id_file": id_file, "package": package, "file_md5": md5, "file_size": file_size, "AndroidVersion": andro_version,"main_activity": main_activity, "activities": activities, "services": services, "permissions": permissions, "links": urls, "emails": emails, "ftps": ftps, "ips": IPs, "strings": strings, "date_Insert": date_Insert, "date_Update": date_Update, "bot":"DownloadAPK"})
-			print colores.blue + "[INFO][>] INSERT IN DB" + colores.normal
+			cursor = db.Tacita.insert_one({"id_file": id_file, "package": package, "file_md5": md5, "file_size": file_size, "AndroidVersion": andro_version,"main_activity": main_activity, "activities": activities, "services": services, "permissions": permissions, "links": urls, "emails": emails, "ftps": ftps, "ips": IPs, "strings": strings, "date_Insert": date_Insert, "date_Update": date_Update, "bot":"DownloadAPK"})
+			print(colores.blue + "[INFO][>] INSERT IN DB" + colores.normal)
 
 	except Exception as e:
-		print e
+		print(e)
 		pass
 
 
@@ -79,6 +79,10 @@ def main():
 	banner()
 	for target in ls():
 		target = "bot/" + str(target)
+		
+		file_type = magic.from_file(target)
+		if file_type.find('Java archive') == -1:
+			continue
 
 		apkf = APK(target)
 
@@ -103,11 +107,11 @@ def main():
 		all_ips = []
 		all_words = []
 
-		print "----------------------------------------------"
-		print colores.underline + "[+][TARGET][>]" + str(package) + " ["+ str(target) +"]" +  colores.normal
-		print colores.header + "[-][md5][>] " + md5 
-		print colores.header + "[-][Android version][>] " + andro_version
-		print colores.green + "|----[>] " + "Searching emails, links, FTP and IPs in strings ..." + colores.normal
+		print("----------------------------------------------")
+		print(colores.underline + "[+][TARGET][>]" + str(package) + " ["+ str(target) +"]" +  colores.normal)
+		print(colores.header + "[-][md5][>] " + md5)
+		print(colores.header + "[-][Android version][>] " + andro_version)
+		print(colores.green + "|----[>] " + "Searching emails, links, FTP and IPs in strings ..." + colores.normal)
 
 		#Strings
 		strings = os.popen("strings " + target) 
@@ -129,16 +133,16 @@ def main():
 									print(colores.green + "|----[EMAIL][>] " + str(email) + colores.normal)
 									all_emails.append(email)
 				except Exception as e:
-					print e
+					print(e)
 			#To found urls in strings
 			if "http" in word or "wwww." in word:
 				try:
 					url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', word)
 					if not url in all_urls or url == "":
 						all_urls.append(url)
-						print colores.green + "|----[URL][>] " + str(url) + colores.normal
+						print(colores.green + "|----[URL][>] " + str(url) + colores.normal)
 				except Exception as e:
-					print e
+					print(e)
 
 			#To found FTP in strings
 			if "ftp" in word:
@@ -146,18 +150,18 @@ def main():
 					ftp = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', word)
 					if not ftp in all_ftps or ftp == "":
 						all_ftps.append(ftp)
-						print colores.green + "|----[FTP][>] " + str(ftp) + colores.normal
+						print(colores.green + "|----[FTP][>] " + str(ftp) + colores.normal)
 				except Exception as e:
-					print e
+					print(e)
 				
 			#Find IP in strings
 			ip = re.findall( r'[0-9]+(?:\.[0-9]+){3}', word)
 			if ip:
 				try:
 					all_ips.append(ip)
-					print colores.green + "|----[IP][>] " + str(ip) + colores.normal
+					print(colores.green + "|----[IP][>] " + str(ip) + colores.normal)
 				except Exception as e:
-					print e
+					print(e)
 			
 
 		#Save in DB

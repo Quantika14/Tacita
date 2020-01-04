@@ -77,8 +77,8 @@ def main():
 			print(ex)
 	for i in range(start, end):
 		file_type = magic.from_file(str(i))
-
-		if file_type.find('HTML document')>0:
+		print(file_type)
+		if file_type.find('Java archive') >= 0:
 			count_html +=1
 		else:
 			count_apk += 1
